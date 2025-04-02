@@ -5,6 +5,9 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import Loading from '@/componentes/comuns/Loading';
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/auth/auth";
+
 
 const deleteProduto = async (codigo) => {
     'use server';
@@ -22,12 +25,20 @@ export const dynamic = 'force-dynamic';
 
 export default async function Produto() {
 
+    // acessa a sessão
+    const session = await getServerSession(authOptions);
+
     const produtos = await getProdutosDB();
+
+    //se não tem sessão válida redireciona para a tela de login
+    if (!session) {
+        redirect("/api/auth/signin");
+    }
 
     return (
         <Suspense fallback={<Loading />}>
             <div style={{ padding: '20px' }}>
-                <h1>Produtos</h1>
+                <h1>Produtos</h1>                
                 <Link className="btn btn-primary"
                     href={`/privado/produto/${0}/formulario`}>
                     Novo <i className="bi bi-file-earmark-plus"></i>
@@ -55,11 +66,14 @@ export default async function Produto() {
                                         href={`/privado/produto/${produto.codigo}/formulario`}>
                                         <i className="bi bi-pencil-square"></i>
                                     </Link>
-                                    <form action={deleteProduto.bind(null, produto.codigo)} className="d-inline">
-                                        <Button variant="danger" type='submit'>
-                                            <i className="bi bi-trash"></i>
-                                        </Button>
-                                    </form>
+                                    {
+                                        session?.user?.tipo === 'A' &&
+                                        <form action={deleteProduto.bind(null, produto.codigo)} className="d-inline">
+                                            <Button variant="danger" type='submit'>
+                                                <i className="bi bi-trash"></i>
+                                            </Button>
+                                        </form>
+                                    }
                                 </td>
                                 <td>{produto.codigo}</td>
                                 <td>{produto.nome}</td>
